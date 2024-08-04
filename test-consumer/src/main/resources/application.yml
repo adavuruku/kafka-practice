@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: kafka-example
+  kafka:
+#    bootstrap-servers: 20.108.103.227:9094
+    bootstrap-servers: 127.0.0.1:9092
+    topic:
+      notification:
+        name: notifications
+      transaction:
+        name: Transaction.events
+    consumer:
+      group-id: transaction
+#    producer:
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 8888
+
+logging:
+  level:
+    root: INFO
+    org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: WARN
+    com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN

@@ -1,0 +1,31 @@
+
+
+spring:
+  profile:
+    active: default
+  application:
+    name: vanso
+
+server:
+  port: 8000
+
+qt:
+  connection:
+    time: 30
+
+
+
+system:
+  Hmac:
+    secret:
+      key: "H//IEn2vY05IlChVDf6YcSBPXspNKiTBXxIaZJGOfQc="
+#      key: "3qeQioA9tYtWrUIQUENzDQql5BhnTCZ7rLEZgqpGPmY="
+    url:
+      path: ""
+
+
+
+ussd-connector-service:
+  base_url: https://uat-api.quickteller.com
+#  base_url: https://api-v2.quickteller.com
+#  base_url: http://localhost:8001
