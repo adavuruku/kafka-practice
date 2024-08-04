@@ -1,0 +1,10 @@
+The event should extend ApplicationEvent
+The publisher should inject an ApplicationEventPublisher object
+The listener should implement the ApplicationListener interface
+
+
+https://howtodoinjava.com/spring-core/how-to-publish-and-listen-application-events-in-spring/
+
+https://www.geeksforgeeks.org/spring-boot-spring-jdbc-vs-spring-data-jdbc/
+
+https://reflectoring.io/spring-boot-application-events-explained/
