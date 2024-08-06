@@ -2,6 +2,8 @@ package com.example.kafka_learn.config;
 
 import com.example.kafka_learn.Deserializers.MultiTypeJsonDeserialiser;
 import com.example.kafka_learn.Serializers.MultiTypeJsonSerializer;
+import com.example.kafka_learn.dto.AuditEventDto;
+import com.example.kafka_learn.dto.Transaction;
 import com.example.kafka_learn.event.EventHandler;
 import com.example.kafka_learn.event.KafkaConsumer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -19,10 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaAdmin;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.*;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
@@ -70,6 +69,7 @@ public class KafkaConfig {
 //        configs.put(SaslConfigs.SASL_JAAS_CONFIG, saslJaasConfig);
         return new KafkaAdmin(configs);
     }
+    /** String producer config*/
     @Bean
     public Map<String, Object> stringProducerConfigs() {
         Map<String, Object> props = new HashMap<>();
@@ -85,7 +85,7 @@ public class KafkaConfig {
         return new KafkaTemplate<>( new DefaultKafkaProducerFactory<>(stringProducerConfigs()));
     }
 
-
+    /** json producer config*/
     @Bean
     public Map<String, Object> jsonProducerConfigs() {
         Map<String, Object> props = new HashMap<>();
@@ -102,6 +102,51 @@ public class KafkaConfig {
     public KafkaTemplate<String, Object> jsonKafkaTemplate() {
         return new KafkaTemplate<>( new DefaultKafkaProducerFactory<>(jsonProducerConfigs()));
     }
+
+    /** Audit trail producer config*/
+    @Bean
+    public Map<String, Object> auditTrailProducerConfigs() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        return props;
+    }
+
+    @Bean
+    public KafkaTemplate<String, AuditEventDto> auditTrailKafkaTemplate() {
+        return new KafkaTemplate<>( new DefaultKafkaProducerFactory<>(auditTrailProducerConfigs()));
+    }
+
+    @Bean
+    public ProducerFactory<String, Transaction> consumerServiceProducerFactory()
+    {
+
+        // Creating a Map
+        Map<String, Object> config = new HashMap<>();
+
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                bootstrapServers);
+        config.put(
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class);
+        config.put(
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                JsonSerializer.class);
+
+//        config.put(ConsumerConfig.GROUP_ID_CONFIG, "groupId");
+
+        return new DefaultKafkaProducerFactory<>(config);
+    }
+
+    @Bean
+    public KafkaTemplate<String, Transaction> consumerServiceKafkaTemplate()
+    {
+        return new KafkaTemplate<>(consumerServiceProducerFactory());
+    }
+
+
 //
 //    @Bean
 //    public Map<String, Object> avroProducerConfigs() {

@@ -1,6 +1,8 @@
 package com.example.kafka_learn.service;
 
+import com.example.kafka_learn.dto.AuditEventDto;
 import com.example.kafka_learn.dto.Book;
+import com.example.kafka_learn.dto.Transaction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,8 @@ import java.util.UUID;
 public class KafkaProducerService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final KafkaTemplate<String, Object> kafkaJsonTemplate;
+    private final KafkaTemplate<String, AuditEventDto> kafkaAuditEventTemplate;
+    private final KafkaTemplate<String, Transaction> kafkaConsumerServiceTemplate;
 
 //    @Value("${spring.kafka.template.default-topic}")
     @Value("${spring.kafka.string.default-topic}")
@@ -70,5 +74,27 @@ public class KafkaProducerService {
 
         ProducerRecord<String,Object> record = new ProducerRecord<>(jsonTopic, 0, KEY, message, headers);
         kafkaJsonTemplate.send(record);
+    }
+
+    public void sendAuditTrailMessage(AuditEventDto auditEventDto, String signedPayload) {
+
+        try {
+            long timestamp = System.currentTimeMillis();
+            List<Header> headers = new ArrayList<>();
+            headers.add(new RecordHeader(KafkaHeaders.RECEIVED_TIMESTAMP, String.valueOf(timestamp).getBytes(StandardCharsets.UTF_8)));
+            headers.add(new RecordHeader(KafkaHeaders.RECEIVED_KEY, KEY.getBytes(StandardCharsets.UTF_8)));
+            headers.add(new RecordHeader("eventType", "CreateAuditTrail".getBytes(StandardCharsets.UTF_8)));
+            headers.add(new RecordHeader("id", UUID.randomUUID().toString().replace("-","").getBytes()));
+            headers.add(new RecordHeader("signedPayload", signedPayload.getBytes(StandardCharsets.UTF_8)));
+
+            String payload = new ObjectMapper().writeValueAsString(auditEventDto);
+
+            ProducerRecord<String,AuditEventDto> record = new ProducerRecord<>("AuditTrail.events",null, KEY, auditEventDto, headers);
+            kafkaAuditEventTemplate.send(record);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }

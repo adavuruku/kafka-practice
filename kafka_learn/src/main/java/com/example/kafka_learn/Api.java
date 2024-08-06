@@ -1,5 +1,6 @@
 package com.example.kafka_learn;
 
+import com.example.kafka_learn.dto.AuditEventDto;
 import com.example.kafka_learn.dto.Book;
 import com.example.kafka_learn.service.KafkaProducerService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +35,15 @@ public class Api {
             @RequestBody @Validated Object book, HttpServletRequest httpServletRequest)
             throws IOException {
         kafkaProducerService.sendJsonMessage(book);
+        return new ResponseEntity<>("Successful", CREATED);
+    }
+
+    @PostMapping("/audit-trail")
+    public ResponseEntity<Object> jsonMessage(
+            @RequestBody @Validated AuditEventDto auditEventDto,
+            @RequestHeader("signedPayload") String signedPayload, HttpServletRequest httpServletRequest)
+            throws IOException {
+        kafkaProducerService.sendAuditTrailMessage(auditEventDto, signedPayload);
         return new ResponseEntity<>("Successful", CREATED);
     }
 }
