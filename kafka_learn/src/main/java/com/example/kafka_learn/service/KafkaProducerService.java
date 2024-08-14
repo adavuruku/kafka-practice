@@ -51,7 +51,7 @@ public class KafkaProducerService {
             headers.add(new RecordHeader("eventType", "StringEvent".getBytes(StandardCharsets.UTF_8)));
             headers.add(new RecordHeader("id", UUID.randomUUID().toString().replace("-","").getBytes()));
 
-            ProducerRecord<String,String> record = new ProducerRecord<>(stringTopic, 0, KEY, message.getBookName(), headers);
+            ProducerRecord<String,String> record = new ProducerRecord<>("test-topic", 0, KEY, message.getBookName(), headers);
             kafkaTemplate.send(record);
 
             headers.add(new RecordHeader("eventType", "StringBookEvent".getBytes(StandardCharsets.UTF_8)));
