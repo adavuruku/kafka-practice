@@ -23,4 +23,21 @@ public class ScholasticProducerService {
          ProducerRecord<String,Object> record = new ProducerRecord<>(edTopic, 0, null, message);
         kafkaJsonTemplate.send(record);
     }
+
+    public void sendJson2(Object message) {
+        ProducerRecord<String,Object> record = new ProducerRecord<>("eds.access-roster-events.v1", 0, null, message);
+        kafkaJsonTemplate.send(record);
+    }
+
+    public void sendCMDMJson(Object message) {
+        ProducerRecord<String,Object> record = new ProducerRecord<>("outbox-events.ReadWrite.event", 0, null, message);
+        kafkaJsonTemplate.send(record);
+    }
+
+    public void sendIamJson(Object message) {
+        ProducerRecord<String,Object> record = new ProducerRecord<>("iam.iam-user-events.v1", 0, null, message);
+        kafkaJsonTemplate.send(record);
+    }
+
+
 }

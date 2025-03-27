@@ -286,3 +286,10 @@ In this scenario:
 
 When consumers use different `group.id`s but subscribe to the same topic, they act as independent consumers, each processing the full set of messages from the topic. This allows different consumer groups to process the same data stream in parallel but independently of one another.
 
+
+cmdm.organization-crud-events.v1
+
+/usr/local/opt/kafka/bin/kafka-console-consumer.sh /usr/local/etc/kafka/server.properties
+
+kafka-console-consumer --topic cmdm.organization-crud-events.v1 --from-beginning --bootstrap-server localhost:9092
+

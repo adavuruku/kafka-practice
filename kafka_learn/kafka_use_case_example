@@ -1,0 +1,35 @@
+https://freedium.cfd/https://blog.stackademic.com/kafka-deep-dive-scenario-based-problems-for-professionals-1c7a5aaa5f1c
+
+https://blog.stackademic.com/kafka-deep-dive-scenario-based-problems-for-professionals-1c7a5aaa5f1c
+
+Scenario 1. 1 consumer in a consumer group
+set-up: [tpoic: 1, partition: 4, consumer-group: 1, consumer: 1]
+result: the single consumer will read message from the  4 partitions.
+        order is maintain in each partition but not across the partitions.
+
+Scenario 2. Number of consumer in a consumer group is less than or equal the number of partition
+set-up: [tpoic: 1, partition: 4, consumer-group: 1, consumer: 2]
+result: the two or more consumer will read message from the  different partitions.
+        broker will distribute the partition equally.
+        e.g consumer-1 will read from partition 0 and 2 and consumer-2 will read from partition 1 and 3
+        order is maintain in each partition but not across the partitions.
+
+        Note: kafka assign consumers in a consumer group to a unique partition. so that each partition is
+        consumer by exactly one consumer in a consumer group.
+        this is to ensure that a message is ever read by a single consumer in the consumer group.
+
+Scenario 3. Number of consumer in a consumer group is more than the number of partition
+set-up: [tpoic: 1, partition: 4, consumer-group: 1, consumer: 5]
+result: four out of the five consumer will read message from single partitions each.
+        broker will assign a partition to four of the consumer.
+        e.g consumer-1 will read from partition 0, consumer-2 will read from partiton 2, consumer-3 will read from partiton 3, and consumer-4 will read from partiton 1
+        order is maintain in each partition but not across the partitions.
+
+Scenario 3. Number of consumer in a consumer group is more than the number of partition
+set-up: [tpoic: 1, partition: 4, consumer-group: 1, consumer: 5]
+result: four out of the five consumer will read message from single partitions each.
+        broker will assign a partition to four of the consumer.
+        e.g consumer-1 will read from partition 0, consumer-2 will read from partiton 2, consumer-3 will read from partiton 3, and consumer-4 will read from partiton 1
+        order is maintain in each partition but not across the partitions.
+
+

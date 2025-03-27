@@ -6,10 +6,13 @@ import com.example.kafka_learn.dto.AuditEventDto;
 import com.example.kafka_learn.dto.Transaction;
 import com.example.kafka_learn.event.EventHandler;
 import com.example.kafka_learn.event.KafkaConsumer;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -21,18 +24,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
+import org.springframework.kafka.listener.CommonErrorHandler;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.kafka.clients.CommonClientConfigs.SECURITY_PROTOCOL_CONFIG;
+import static org.apache.kafka.common.config.SaslConfigs.SASL_JAAS_CONFIG;
+import static org.apache.kafka.common.config.SaslConfigs.SASL_MECHANISM;
+
 /**
  * Created by Sherif.Abdulraheem 8/3/2024 - 5:30 PM
  **/
 @Configuration
 @EnableKafka
+@Slf4j
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
@@ -255,5 +268,53 @@ public class KafkaConfig {
     @Bean
     public EventHandler createKafkaEventHandler(){
         return new EventHandler();
+    }
+
+    @Bean(name = "inboundSyncErrorHandler")
+    public DefaultErrorHandler errorHandler() {
+        return new DefaultErrorHandler((consumerRecord, exception) -> {
+            log.error("Message processing failed for {} with exception {}", consumerRecord.value(), exception.getMessage());
+            // logic to execute when all the retry attempts are exhausted
+            // Send message to Retry Queue if needed
+        });
+    }
+
+    @Bean
+    public Map<String, Object> auditEventConsumerConfigs() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        return props;
+    }
+
+    @Bean(name = "inboundSyncConsumerFactory")
+    public ConsumerFactory<String, AuditEventDto> auditConsumerFactory() {
+        // Set up the JsonDeserializer to handle lists of EdnitionEvent objects
+        JavaType type = TypeFactory.defaultInstance().constructType(AuditEventDto.class);
+        JsonDeserializer<AuditEventDto> deserializer = new JsonDeserializer<>(type);
+        return new DefaultKafkaConsumerFactory<>(
+                auditEventConsumerConfigs(),
+                new StringDeserializer(),
+                new ErrorHandlingDeserializer<>(deserializer)
+        );
+    }
+
+    @Bean(name = "inboundSyncListenerContainerFactory")
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, AuditEventDto>>
+    kafkaAuditEventDtoListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, AuditEventDto> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(auditConsumerFactory());
+//        factory.setConcurrency(kafkaConfig.getInboundSync().getConcurrency().intValue());
+        factory.getContainerProperties().setPollTimeout(3000);
+        factory.setCommonErrorHandler(errorHandler());
+        return factory;
+    }
+
+    @Bean
+    CommonErrorHandler commonErrorHandler() {
+        return new KafkaErrorHandler();
     }
 }

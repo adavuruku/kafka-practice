@@ -4,9 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Sherif.Abdulraheem 13/08/2024 - 17:23
@@ -30,13 +29,35 @@ public class testMain {
                 new ObjectMapper().writeValueAsString(dbPayload.getUserMetadata()));
 
         userPayload.getOrgRoles().addAll(dbPayload.getOrgRoles());
-        if(userPayload.getOrgRoles().size()==1){
-            userPayload.getOrgRoles().stream().findFirst().get().setIsPrimary(true);
-        }
-        log.info("new Org Roles {}", new ObjectMapper().writeValueAsString(userPayload.getOrgRoles()));
+//        if(userPayload.getOrgRoles().size()==1){
+//            userPayload.getOrgRoles().stream().findFirst().get().setIsPrimary(true);
+//        }
+//        log.info("new Org Roles {}", new ObjectMapper().writeValueAsString(userPayload.getOrgRoles()));
+        log.info("new Org Roles {}", new ObjectMapper().writeValueAsString(buildOrganizationRoleChanges(userPayload.getOrgRoles(), dbPayload.getOrgRoles())));
 
-        userPayload.getUserMetadata().addAll(dbPayload.getUserMetadata());
-        log.info("User MetaData {}", new ObjectMapper().writeValueAsString(userPayload.getUserMetadata()));
+        //payload will add
+//        userPayload.getUserMetadata().addAll(dbPayload.getUserMetadata());
+//        Map<String, Object> newMetadata = dbPayload.getUserMetadata().stream()
+//                .collect(Collectors.toMap(
+//                        meta -> meta.getAttributeKey(),
+//                        meta -> meta.getAttributeValue(),
+//                        (oldValue, newValue) -> newValue));
+//        for(Metadata metadata : userPayload.getUserMetadata()){
+//            if(newMetadata.containsKey(metadata.getAttributeKey())){
+//                metadata.setAttributeValue(String.valueOf(newMetadata.get(metadata.getAttributeKey())));
+//            }
+//        }
+//
+//        for(Metadata metadata : dbPayload.getUserMetadata()){
+//            if(!userPayload.getUserMetadata().contains(metadata)){
+//                userPayload.getUserMetadata().add(metadata);
+//            }
+//        }
+
+
+        log.info("User MetaData {}", new ObjectMapper().writeValueAsString(
+                buildRoleChanges(userPayload.getUserMetadata(), null))
+        );
         log.info("Is Update required {}", isUpadeRequired(userPayload, dbPayload));
         log.info("Is Update required {}", isUpadeRequired(userPayload, userPayload));
 
@@ -48,6 +69,8 @@ public class testMain {
         uv3a.setEmail("aaa@gmail.com");
 
         log.info("UV required {}", uv3a.equals(uv3));
+
+        testMap();
 
     }
 
@@ -62,7 +85,7 @@ public class testMain {
 
         //or_roles
         OrganizationRole orgRole = new OrganizationRole();
-        orgRole.setUserRole("admin");
+        orgRole.setUserRole("teacher");
         orgRole.setIsPrimary(false);
 //        orgRole.setOrganizationId(NIL_GUID);
         orgRole.setIsPrimary(null);
@@ -80,6 +103,11 @@ public class testMain {
         mtData = new Metadata();
         mtData.setAttributeKey("color");
         mtData.setAttributeValue("#546as3");
+        metadataSet.add(mtData);
+
+        mtData = new Metadata();
+        mtData.setAttributeKey("title");
+        mtData.setAttributeValue("Madam");
         metadataSet.add(mtData);
 
         UserV2 userV2 = new UserV2();
@@ -163,5 +191,115 @@ public class testMain {
 
     public static boolean isUpadeRequired(UserV2 userV2, UserV2 dbUserV2){
         return userV2.equals(dbUserV2);
+    }
+
+    public static Set<OrganizationRole> buildOrganizationRoleChanges(Set<OrganizationRole> newOrgRolePayload, Set<OrganizationRole> dbPayload){
+        Map<String, OrganizationRole> dbOrgRoleMap = dbPayload.stream()
+                .collect(Collectors.toMap(
+                        organizationRole-> String.valueOf(organizationRole.getOrganizationId()).concat(organizationRole.getUserRole()),
+                        organizationRole -> organizationRole,
+                        (oldValue, newValue) -> newValue));
+
+        for(OrganizationRole orgRole : newOrgRolePayload){
+            String roleKey = String.valueOf(orgRole.getOrganizationId()).concat(orgRole.getUserRole());
+            if(dbOrgRoleMap.containsKey(roleKey)){
+                boolean existingPrimary = dbOrgRoleMap.get(roleKey).getIsPrimary();
+                dbOrgRoleMap.get(roleKey).setUserRole(orgRole.getUserRole());
+                dbOrgRoleMap.get(roleKey).setIsPrimary(orgRole.getIsPrimary() != null? orgRole.getIsPrimary(): existingPrimary);
+            }else{
+                dbOrgRoleMap.put(roleKey, orgRole);
+            }
+        }
+        return new HashSet<>(dbOrgRoleMap.values());
+
+    }
+
+    public static Set<Metadata> buildRoleChanges(Set<Metadata> newMetadataPayload, Set<Metadata> dbPayload){
+//        Map<String, Metadata> dbRoleMap = new HashMap<>();
+//        for(Metadata orgMetadata : dbPayload){
+//            dbRoleMap.put(orgMetadata.getAttributeKey(), orgMetadata);
+//        }
+        Map<String, Metadata> dbRoleMap = new HashMap<>();
+        if(dbPayload != null && !dbPayload.isEmpty()){
+            dbRoleMap = dbPayload.stream()
+                    .collect(Collectors.toMap(
+                            Metadata::getAttributeKey,
+                            meta -> meta,
+                            (oldValue, newValue) -> newValue));
+        }
+
+
+        for(Metadata orgMetadata : newMetadataPayload){
+            if(dbRoleMap.containsKey(orgMetadata.getAttributeKey())){
+                dbRoleMap.get(orgMetadata.getAttributeKey()).setAttributeValue(orgMetadata.getAttributeValue());
+            }else{
+                dbRoleMap.put(orgMetadata.getAttributeKey(), orgMetadata);
+            }
+        }
+       return new HashSet<>(dbRoleMap.values());
+    }
+
+    public static void testMap(){
+        String json = "{\n" +
+                "  \"metadata\": {\n" +
+                "    \"other_roles\": {\n" +
+                "      \"aide\": {\n" +
+                "        \"identifier\": \"11\",\n" +
+                "        \"metadata\": {\n" +
+                "          \"staff_legacy_id\": \"66c4ed06a79b7618319ce634\",\n" +
+                "          \"title\": \"Ms\"\n" +
+                "        },\n" +
+                "        \"orgs\": [\n" +
+                "          {\n" +
+                "            \"href\": \"\",\n" +
+                "            \"sourcedId\": \"068n15hlum4fuia399sg\",\n" +
+                "            \"type\": \"org\"\n" +
+                "          }\n" +
+                "        ],\n" +
+                "        \"role\": \"aide\",\n" +
+                "        \"userIds\": [\n" +
+                "          {\n" +
+                "            \"identifier\": \"66c4ed06a79b7618319ce634\",\n" +
+                "            \"type\": \"legacy_id\"\n" +
+                "          }\n" +
+                "        ]\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"teacher_legacy_id\": \"66c4e24dbe53d103e01ada8a\"\n" +
+                "  }\n" +
+                "}";
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            Map<String, Object> map = mapper.readValue(json, Map.class);
+
+            // Access the data
+            Map<String, Object> metadata = (Map<String, Object>) map.get("metadata");
+            Map<String, Object> otherRoles = (Map<String, Object>) metadata.get("other_roles");
+            Map<String, Object> aide = (Map<String, Object>) otherRoles.get("aide");
+            String identifier = (String) aide.get("identifier");
+
+            System.out.println("Identifier: " + identifier);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Set<Metadata> mt = new HashSet<>();
+        Metadata m1 = new Metadata();
+        m1.setAttributeKey("aide");
+        m1.setAttributeValue("11");
+        mt.add(m1);
+        Metadata m2 = new Metadata();
+        m2.setAttributeKey("EdnitionId");
+        m2.setAttributeValue("12324242");
+        mt.add(m2);
+
+        mt.removeIf(metadata -> metadata.getAttributeKey().equals("EdnitionId"));
+        System.out.println(mt.stream().filter(metadata -> metadata.getAttributeKey().equals("aide")).count());
+        try {
+            System.out.println("Here res -> " + new ObjectMapper().writeValueAsString(mt));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

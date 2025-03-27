@@ -29,4 +29,28 @@ public class scholasticAPI {
         scholasticProducerService.sendJson(dataObj);
         return new ResponseEntity<>("Successful", CREATED);
     }
+
+    @PostMapping("/send2")
+    public ResponseEntity<Object> stringMessageTwo(
+            @RequestBody @Validated Object dataObj, HttpServletRequest httpServletRequest)
+            throws IOException {
+        scholasticProducerService.sendJson2(dataObj);
+        return new ResponseEntity<>("Successful", CREATED);
+    }
+
+    @PostMapping("/cmdm/send")
+    public ResponseEntity<Object> sendCMDMMessage(
+            @RequestBody @Validated Object dataObj, HttpServletRequest httpServletRequest)
+            throws IOException {
+        scholasticProducerService.sendCMDMJson(dataObj);
+        return new ResponseEntity<>("Successful", CREATED);
+    }
+
+    @PostMapping("/iam/send")
+    public ResponseEntity<Object> sendIAMMessage(
+            @RequestBody @Validated Object dataObj, HttpServletRequest httpServletRequest)
+            throws IOException {
+        scholasticProducerService.sendIamJson(dataObj);
+        return new ResponseEntity<>("Successful", CREATED);
+    }
 }
