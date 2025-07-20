@@ -53,4 +53,18 @@ public class scholasticAPI {
         scholasticProducerService.sendIamJson(dataObj);
         return new ResponseEntity<>("Successful", CREATED);
     }
+
+    @PostMapping("/cdc/send")
+    public ResponseEntity<Object> sendCDCUserMessage(
+            @RequestBody @Validated Object dataObj,
+            @RequestParam("topic") String topic, HttpServletRequest httpServletRequest)
+            throws IOException {
+
+//        for (int i = 0; i < 20; i++) {
+//            scholasticProducerService.sendCDCUserJson(dataObj, topic);
+//        }
+        scholasticProducerService.sendCDCUserJson(dataObj, topic);
+        return new ResponseEntity<>("Successful", CREATED);
+    }
+
 }

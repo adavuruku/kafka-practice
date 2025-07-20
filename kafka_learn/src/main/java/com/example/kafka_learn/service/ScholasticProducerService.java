@@ -39,5 +39,10 @@ public class ScholasticProducerService {
         kafkaJsonTemplate.send(record);
     }
 
+    public void sendCDCUserJson(Object message, String topic) {
+        ProducerRecord<String,Object> record = new ProducerRecord<>(topic, 0, null, message);
+        kafkaJsonTemplate.send(record);
+    }
+
 
 }
